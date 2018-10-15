@@ -1,8 +1,8 @@
 # Software required
 
-pdftoppm - to convert a pdf to a list of PPM images, can be installed as part
+- pdftoppm - to convert a pdf to a list of PPM images, can be installed as part
 of poppler package
-imagemagick - to manupulate images and convert to pdf file
+- imagemagick - to manupulate images and convert to pdf file
 
 # Usage
 
