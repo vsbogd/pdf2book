@@ -71,15 +71,17 @@ def split_pages(src):
             dst.extend(page.split())
     return dst
 
-def add_blank(src):
+def add_blank(src, after_last = True):
     pages_num = len(src)
     count = (4 - pages_num % 4) % 4
     logging.info("original number of pages: " + str(pages_num) +
                  ", number of blank pages to add: " + str(count))
-    dst = src.copy()
     last_page = src[pages_num - 1]
     blank = last_page.blank()
-    dst.extend([blank] * count)
+    if after_last:
+        dst = src + [blank] * count
+    else:
+        dst = src[:pages_num - 1] + [blank] * count + [last_page]
     return dst
 
 def save_pages(pages):
@@ -114,6 +116,8 @@ def parse_args():
     parser.add_argument("output", type=str, help="output PDF file")
     parser.add_argument("--log-level", type=str, help="logging level",
             default="INFO")
+    parser.add_argument("--blank-after-last", action="store_true",
+            help="insert blank pages after last one", default=False)
     return parser.parse_args()
 
 args = parse_args()
@@ -122,7 +126,7 @@ logging.basicConfig(level=getattr(logging, args.log_level.upper()))
 with open(args.input, "rb") as input:
     pages = pdf_to_pages(input)
     pages = split_pages(pages)
-    pages = add_blank(pages)
+    pages = add_blank(pages, after_last=args.blank_after_last)
     pages = rearrange_pages(pages)
     with open(args.output, "wb") as output:
         pages_to_pdf(output, pages)
