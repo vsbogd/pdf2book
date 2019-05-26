@@ -74,8 +74,11 @@ def square(size):
     (width, height) = size
     return width * height
 
-def split_pages(src):
-    single_flags = find_single_pages(src)
+def split_pages(src, force=False):
+    if force:
+        single_flags = [ False ] * len(src)
+    else:
+        single_flags = find_single_pages(src)
     dst = []
     for (single, page) in zip(single_flags, src):
         if single:
@@ -149,6 +152,10 @@ def parse_args():
             default="INFO")
     parser.add_argument("--blank-after-last", action="store_true",
             help="insert blank pages after last one", default=False)
+    parser.add_argument("--mode", type=str, default="auto",
+            help="pages splitting mode: auto - determine double pages " +
+            "automatically, single - single pages only, double - double " +
+            "pages only")
     return parser.parse_args()
 
 args = parse_args()
@@ -156,7 +163,8 @@ logging.basicConfig(level=getattr(logging, args.log_level.upper()))
 
 with open(args.input, "rb") as input:
     pages = pdf_to_pages(input)
-    pages = split_pages(pages)
+    if args.mode != "single":
+        pages = split_pages(pages, force=args.mode=="auto")
     pages = resize_pages(pages)
     pages = align_double_pages(pages)
     pages = add_blank(pages, after_last=args.blank_after_last)
