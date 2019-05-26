@@ -1,5 +1,5 @@
 import io
-import PyPDF2
+import pdf2image
 import PIL as pil
 import argparse
 from sklearn.cluster import KMeans
@@ -7,40 +7,8 @@ import numpy as np
 import logging
 
 def pdf_to_pages(file):
-    pdf = PyPDF2.PdfFileReader(file)
-    images = []
-    for i in range(0, pdf.getNumPages(), 1):
-        images.append(page_to_image(pdf.getPage(i)))
-    return images
-
-def page_to_image(page):
-    """
-    This code is adoption of the StackOverflow answer at
-    https://stackoverflow.com/a/37055040
-    """
-    xObject = page["/Resources"]["/XObject"].getObject()
-
-    for obj in xObject:
-        if xObject[obj]["/Subtype"] == "/Image":
-            size = (xObject[obj]["/Width"], xObject[obj]["/Height"])
-            data = xObject[obj]._data
-            if xObject[obj]["/ColorSpace"] == "/DeviceRGB":
-                mode = "RGB"
-            else:
-                mode = "P"
-
-            if xObject[obj]["/Filter"] == "/FlateDecode":
-                return pil.Image.frombytes(mode, size, data)
-            elif xObject[obj]["/Filter"] == "/DCTDecode":
-                with io.BytesIO(data) as file:
-                    image = pil.Image.open(file)
-                    image.load()
-                    return image
-            elif xObject[obj]["/Filter"] == "/JPXDecode":
-                with io.BytesIO(data) as file:
-                    image = pil.Image.open(file)
-                    image.load()
-                    return image
+    images = pdf2image.convert_from_bytes(file.read())
+    return list(map(Page, images))
 
 class Page:
 
@@ -152,7 +120,7 @@ args = parse_args()
 logging.basicConfig(level=getattr(logging, args.log_level.upper()))
 
 with open(args.input, "rb") as input:
-    pages = list(map(Page, pdf_to_pages(input)))
+    pages = pdf_to_pages(input)
     pages = split_pages(pages)
     pages = add_blank(pages)
     pages = rearrange_pages(pages)
