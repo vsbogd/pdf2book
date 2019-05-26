@@ -104,12 +104,12 @@ def add_blank(src, after_last = True):
     count = (4 - pages_num % 4) % 4
     logging.info("original number of pages: " + str(pages_num) +
                  ", number of blank pages to add: " + str(count))
-    last_page = src[pages_num - 1]
+    last_page = src[-1]
     blank = last_page.blank()
     if after_last:
         dst = src + [blank] * count
     else:
-        dst = src[:pages_num - 1] + [blank] * count + [last_page]
+        dst = src[:-1] + [blank] * count + [last_page]
     return dst
 
 def save_pages(pages):
