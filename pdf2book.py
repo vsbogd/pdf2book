@@ -44,6 +44,17 @@ class Page:
         image.paste(right.image, (left_w, 0))
         return Page(image)
 
+    def resize(self, width=None, height=None):
+        size = None
+        if width is None and height is None:
+            raise ValueError("Either 'width' or 'height' argument should " +
+                             "be passed")
+        if height is None:
+            height = int(width / ratio(self.size()))
+        if width is None:
+            width = int(height * ratio(self.size()))
+        return Page(self.image.resize((width, height)))
+
 def find_single_pages(pages):
     sizes = np.array(list(map(lambda x: [ratio(x)], map(Page.size, pages))))
     logging.debug("sizes: " + str(sizes))
@@ -69,6 +80,11 @@ def split_pages(src):
             dst.append(page)
         else:
             dst.extend(page.split())
+    return dst
+
+def resize_pages(src):
+    max_height = max([page.size()[1] for page in src])
+    dst = [page.resize(height=max_height) for page in src]
     return dst
 
 def add_blank(src, after_last = True):
@@ -126,6 +142,7 @@ logging.basicConfig(level=getattr(logging, args.log_level.upper()))
 with open(args.input, "rb") as input:
     pages = pdf_to_pages(input)
     pages = split_pages(pages)
+    pages = resize_pages(pages)
     pages = add_blank(pages, after_last=args.blank_after_last)
     pages = rearrange_pages(pages)
     with open(args.output, "wb") as output:
