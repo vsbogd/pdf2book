@@ -59,9 +59,9 @@ class Page:
 def find_single_pages(pages):
     sizes = np.array(list(map(lambda size: [ratio(size)],
                               map(Page.size, pages))))
-    logging.debug("sizes: " + str(sizes))
+    log().debug("sizes: " + str(sizes))
     kmeans = KMeans(n_clusters=2, random_state=0).fit(sizes)
-    logging.debug("kmeans.labels_: " + str(kmeans.labels_))
+    log().debug("kmeans.labels_: " + str(kmeans.labels_))
     smallest = min(enumerate(kmeans.cluster_centers_),
                    key=lambda pair : pair[1])[0]
     return list(map(lambda label : label == smallest, kmeans.labels_))
@@ -97,7 +97,7 @@ def align_double_pages(src):
     (left, right) = pairs[-1]
     if left.parent == right.parent:
         return src
-    logging.info("adding blank page to align double pages")
+    log().info("adding blank page to align double pages")
     first_page = src[0]
     dst = [first_page] + [first_page.blank()] + src[1:]
     return dst
@@ -105,7 +105,7 @@ def align_double_pages(src):
 def add_blank(src, after_last = True):
     pages_num = len(src)
     count = (4 - pages_num % 4) % 4
-    logging.info("original number of pages: " + str(pages_num) +
+    log().info("original number of pages: " + str(pages_num) +
                  ", number of blank pages to add: " + str(count))
     last_page = src[-1]
     blank = last_page.blank()
@@ -157,6 +157,9 @@ def parse_args():
             "automatically, single - single pages only, double - double " +
             "pages only")
     return parser.parse_args()
+
+def log():
+    return logging.getLogger("pdf2book")
 
 args = parse_args()
 logging.basicConfig(level=getattr(logging, args.log_level.upper()))
