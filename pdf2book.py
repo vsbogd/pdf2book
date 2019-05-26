@@ -56,13 +56,14 @@ class Page:
         return Page(self.image.resize((width, height)))
 
 def find_single_pages(pages):
-    sizes = np.array(list(map(lambda x: [ratio(x)], map(Page.size, pages))))
+    sizes = np.array(list(map(lambda size: [ratio(size)],
+                              map(Page.size, pages))))
     logging.debug("sizes: " + str(sizes))
     kmeans = KMeans(n_clusters=2, random_state=0).fit(sizes)
     logging.debug("kmeans.labels_: " + str(kmeans.labels_))
     smallest = min(enumerate(kmeans.cluster_centers_),
-                   key=lambda x : x[1])[0]
-    return list(map(lambda x : x == smallest, kmeans.labels_))
+                   key=lambda pair : pair[1])[0]
+    return list(map(lambda label : label == smallest, kmeans.labels_))
 
 def ratio(size):
     (width, height) = size
@@ -123,7 +124,7 @@ def rearrange_pages(src):
     return dst
 
 def pages_to_pdf(file, pages):
-    images = list(map(lambda x : x.image, pages))
+    images = list(map(lambda page : page.image, pages))
     images[0].save(file, save_all=True, append_images=images[1:])
 
 def parse_args():
