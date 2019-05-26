@@ -164,7 +164,7 @@ logging.basicConfig(level=getattr(logging, args.log_level.upper()))
 with open(args.input, "rb") as input:
     pages = pdf_to_pages(input)
     if args.mode != "single":
-        pages = split_pages(pages, force=args.mode=="auto")
+        pages = split_pages(pages, force=args.mode!="auto")
     pages = resize_pages(pages)
     pages = align_double_pages(pages)
     pages = add_blank(pages, after_last=args.blank_after_last)
