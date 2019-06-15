@@ -184,6 +184,7 @@ def parse_args():
     parser.add_argument("--blank-after-last", action="store_true",
             help="insert blank pages after last one", default=False)
     parser.add_argument("--mode", type=str, default="auto",
+            choices=["auto", "single", "double"],
             help="pages splitting mode: auto - determine double pages " +
             "automatically, single - single pages only, double - double " +
             "pages only")
