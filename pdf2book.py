@@ -163,6 +163,18 @@ def skip_pages(pages, to_skip):
     pages_enum = filter(lambda pair: (pair[0] + 1) not in to_skip, enumerate(pages))
     return list(map(lambda pair : pair[1], pages_enum))
 
+def pdf_to_book(input, output, args):
+    pages = pdf_to_pages(input)
+    pages = skip_pages(pages, args.skip)
+    if args.mode != "single":
+        pages = split_pages(pages, force=args.mode!="auto")
+    pages = resize_pages(pages)
+    pages = align_double_pages(pages)
+    pages = add_blank(pages, after_last=args.blank_after_last)
+    pairs = rearrange_pages(pages)
+    pages = pairs_to_pages(pairs)
+    pages_to_pdf(output, pages)
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Convert PDF to book")
     parser.add_argument("input", type=str, help="input PDF file")
@@ -182,19 +194,10 @@ def parse_args():
 def log():
     return logging.getLogger("pdf2book")
 
-args = parse_args()
-logging.basicConfig(level=getattr(logging, args.log_level.upper()))
+if __name__ == "__main__":
+    args = parse_args()
+    logging.basicConfig(level=getattr(logging, args.log_level.upper()))
 
-with open(args.input, "rb") as input:
-    pages = pdf_to_pages(input)
-    pages = skip_pages(pages, args.skip)
-    if args.mode != "single":
-        pages = split_pages(pages, force=args.mode!="auto")
-    pages = resize_pages(pages)
-    pages = align_double_pages(pages)
-    pages = add_blank(pages, after_last=args.blank_after_last)
-    pairs = rearrange_pages(pages)
-    pages = pairs_to_pages(pairs)
-    with open(args.output, "wb") as output:
-        pages_to_pdf(output, pages)
-
+    with open(args.input, "rb") as input:
+        with open(args.output, "wb") as output:
+            pdf_to_book(input, output, args)
