@@ -176,7 +176,7 @@ def parse_args():
             "automatically, single - single pages only, double - double " +
             "pages only")
     parser.add_argument("--skip", type=int, nargs="+", default=[],
-            help="pages to skip")
+            help="pages to skip delimited by space")
     return parser.parse_args()
 
 def log():
