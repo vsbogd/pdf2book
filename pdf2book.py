@@ -159,6 +159,10 @@ def pages_to_pdf(file, pages):
     images = list(map(lambda page : page.image, pages))
     images[0].save(file, save_all=True, append_images=images[1:])
 
+def skip_pages(pages, to_skip):
+    pages_enum = filter(lambda pair: (pair[0] + 1) not in to_skip, enumerate(pages))
+    return list(map(lambda pair : pair[1], pages_enum))
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Convert PDF to book")
     parser.add_argument("input", type=str, help="input PDF file")
@@ -171,6 +175,8 @@ def parse_args():
             help="pages splitting mode: auto - determine double pages " +
             "automatically, single - single pages only, double - double " +
             "pages only")
+    parser.add_argument("--skip", type=int, nargs="+", default=[],
+            help="pages to skip")
     return parser.parse_args()
 
 def log():
@@ -181,6 +187,7 @@ logging.basicConfig(level=getattr(logging, args.log_level.upper()))
 
 with open(args.input, "rb") as input:
     pages = pdf_to_pages(input)
+    pages = skip_pages(pages, args.skip)
     if args.mode != "single":
         pages = split_pages(pages, force=args.mode!="auto")
     pages = resize_pages(pages)
