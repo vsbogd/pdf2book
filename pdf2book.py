@@ -157,7 +157,7 @@ def pairs_to_pages(pairs):
 
 def pages_to_pdf(file, pages):
     images = list(map(lambda page : page.image, pages))
-    images[0].save(file, save_all=True, append_images=images[1:])
+    images[0].save(file, format="pdf", save_all=True, append_images=images[1:])
 
 def skip_pages(pages, to_skip):
     pages_enum = filter(lambda pair: (pair[0] + 1) not in to_skip, enumerate(pages))
