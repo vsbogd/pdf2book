@@ -79,7 +79,19 @@ def find_single_pages(pages):
     log().debug("kmeans.labels_: " + str(kmeans.labels_))
     smallest = min(enumerate(kmeans.cluster_centers_),
                    key=lambda pair : pair[1])[0]
-    return list(map(lambda label : label == smallest, kmeans.labels_))
+    if (len(kmeans.cluster_centers_) == 1 or
+            almost_equal(ratio(kmeans.cluster_centers_), 1.0)):
+        if kmeans.cluster_centers_[0] <= 1.1:
+            log().debug("all pages are single")
+            return [ True ] * len(pages)
+        else:
+            log().debug("all pages are double")
+            return [ False ] * len(pages)
+    else:
+        return list(map(lambda label : label == smallest, kmeans.labels_))
+
+def almost_equal(a, b):
+    return abs(a - b) < 0.1
 
 def ratio(size):
     (width, height) = size
