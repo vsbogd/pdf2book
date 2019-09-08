@@ -120,14 +120,15 @@ def resize_pages(src):
     return dst
 
 def align_double_pages(src):
-    pairs = rearrange_pages(src)
-    (left, right) = pairs[-1]
-    if left.parent == right.parent:
-        return src
-    log().info("adding blank page to align double pages")
-    first_page = src[0]
-    dst = [first_page] + [first_page.blank()] + src[1:]
-    return dst
+    dst = src
+    while True:
+        pairs = rearrange_pages(dst)
+        (left, right) = pairs[-1]
+        if left.parent == right.parent:
+            return dst
+        log().info("adding blank page to align double pages")
+        first_page = dst[0]
+        dst = [first_page] + [first_page.blank()] + dst[1:]
 
 def add_blank(src, after_last = True):
     pages_num = len(src)
