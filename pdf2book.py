@@ -22,6 +22,7 @@ import numpy as np
 import logging
 
 def pdf_to_pages(file):
+    log().info("extract pages")
     images = pdf2image.convert_from_bytes(file.read())
     return list(map(Page, images))
 
@@ -102,6 +103,7 @@ def square(size):
     return width * height
 
 def split_pages(src, force=False):
+    log().info("split pages, force: " + str(force))
     if force:
         single_flags = [ False ] * len(src)
     else:
@@ -115,11 +117,13 @@ def split_pages(src, force=False):
     return dst
 
 def resize_pages(src):
+    log().info("resize pages")
     max_height = max([page.size()[1] for page in src])
     dst = [page.resize(height=max_height) for page in src]
     return dst
 
 def align_double_pages(src):
+    log().info("align double pages")
     dst = src
     while True:
         pairs = rearrange_pages(dst)
@@ -131,6 +135,7 @@ def align_double_pages(src):
         dst = [first_page] + [first_page.blank()] + dst[1:]
 
 def add_blank(src, after_last = True):
+    log().info("add blank pages")
     pages_num = len(src)
     count = (4 - pages_num % 4) % 4
     log().info("original number of pages: " + str(pages_num) +
@@ -150,6 +155,7 @@ def save_pages(pages):
         i += 1
 
 def rearrange_pages(src):
+    log().info("rearrange pages")
     dst = []
     begin = 0
     end = len(src) - 1
@@ -173,6 +179,7 @@ def pages_to_pdf(file, pages):
     images[0].save(file, format="pdf", save_all=True, append_images=images[1:])
 
 def skip_pages(pages, to_skip):
+    log().info("skip pages: " + str(to_skip))
     pages_enum = filter(lambda pair: (pair[0] + 1) not in to_skip, enumerate(pages))
     return list(map(lambda pair : pair[1], pages_enum))
 
