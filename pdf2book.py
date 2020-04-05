@@ -24,13 +24,20 @@ import logging
 def pdf_to_pages(file):
     log().info("extract pages")
     images = pdf2image.convert_from_bytes(file.read())
-    return list(map(Page, images))
+    return list(map(lambda args: Page(str(args[0]), args[1]),
+        zip(range(1, len(images)), images)))
 
 class Page:
 
-    def __init__(self, image, parent=None):
+    def __init__(self, id, image, parent=None, position=None):
+        self.id = id
         self.image = image
         self.parent = parent
+        self.position = position
+        log().debug("new page: " + str(self))
+
+    def __str__(self):
+        return str(self.id)
 
     def save(self, filename):
         self.image.save(filename)
@@ -41,17 +48,19 @@ class Page:
     def split(self):
         (width, height) = self.size()
         mid_x = width // 2
-        return [Page(self.image.crop((0, 0, mid_x, height)), self),
-                Page(self.image.crop((mid_x+1, 0, width, height)), self)]
+        return [Page(self.id + "l", self.image.crop((0, 0, mid_x, height)), self, "left"),
+                Page(self.id + "r", self.image.crop((mid_x+1, 0, width, height)), self, "right")]
 
     def blank(self):
         blank_image = self.image.copy()
         (width, height) = self.size()
         blank_image.paste((255, 255, 255), (0, 0, width, height))
-        return Page(blank_image)
+        return Page("e", blank_image)
 
     @staticmethod
     def merge(left, right):
+        left_id = left.id
+        right_id = right.id
         (left_w, left_h) = left.size()
         (right_w, right_h) = right.size()
         (width, height) = (left_w + right_w, max(left_h, right_h))
@@ -59,7 +68,7 @@ class Page:
         image.paste((255, 255, 255), (0, 0, width, height))
         image.paste(left.image, (0, 0))
         image.paste(right.image, (left_w, 0))
-        return Page(image)
+        return Page(left_id + "+" + right_id, image)
 
     def resize(self, width=None, height=None):
         size = None
@@ -70,7 +79,8 @@ class Page:
             height = int(width / ratio(self.size()))
         if width is None:
             width = int(height * ratio(self.size()))
-        return Page(self.image.resize((width, height)), self.parent)
+        return Page(self.id, self.image.resize((width, height)), self.parent,
+                self.position)
 
 def find_single_pages(pages):
     sizes = np.array(list(map(lambda size: [ratio(size)],
