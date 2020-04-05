@@ -25,15 +25,16 @@ def pdf_to_pages(file):
     log().info("extract pages")
     images = pdf2image.convert_from_bytes(file.read())
     return list(map(lambda args: Page(str(args[0]), args[1]),
-        zip(range(1, len(images)), images)))
+        zip(range(1, len(images) + 1), images)))
 
 class Page:
 
-    def __init__(self, id, image, parent=None, position=None):
+    def __init__(self, id, image, parent=None, position=None, is_blank=False):
         self.id = id
         self.image = image
         self.parent = parent
         self.position = position
+        self.is_blank = is_blank
         log().debug("new page: " + str(self))
 
     def __str__(self):
@@ -48,14 +49,16 @@ class Page:
     def split(self):
         (width, height) = self.size()
         mid_x = width // 2
-        return [Page(self.id + "l", self.image.crop((0, 0, mid_x, height)), self, "left"),
-                Page(self.id + "r", self.image.crop((mid_x+1, 0, width, height)), self, "right")]
+        return [Page(self.id + "l", self.image.crop((0, 0, mid_x, height)),
+                    parent=self, position="left"),
+                Page(self.id + "r", self.image.crop((mid_x+1, 0, width,
+                    height)), parent=self, position="right")]
 
     def blank(self):
         blank_image = self.image.copy()
         (width, height) = self.size()
         blank_image.paste((255, 255, 255), (0, 0, width, height))
-        return Page("e", blank_image)
+        return Page("blank", blank_image, is_blank=True)
 
     @staticmethod
     def merge(left, right):
@@ -79,8 +82,8 @@ class Page:
             height = int(width / ratio(self.size()))
         if width is None:
             width = int(height * ratio(self.size()))
-        return Page(self.id, self.image.resize((width, height)), self.parent,
-                self.position)
+        return Page(self.id, self.image.resize((width, height)), parent=self.parent,
+                position=self.position)
 
 def find_single_pages(pages):
     sizes = np.array(list(map(lambda size: [ratio(size)],
@@ -137,14 +140,30 @@ def align_double_pages(src):
     dst = src
     while True:
         pairs = rearrange_pages(dst)
+        log().debug("pairs: " + ", ".join("(" + str(x[0]) + ", " + str(x[1]) + ")" for x in pairs))
         (left, right) = pairs[-1]
-        if left.parent == right.parent:
+        if (left.parent == right.parent and (left.parent is None or
+                (left.position == "left" and right.position == "right"))):
             return dst
-        log().info("adding blank page to align double pages")
-        first_page = dst[0]
-        dst = [first_page] + [first_page.blank()] + dst[1:]
 
-def add_blank(src, after_last = True):
+        if not dst[-1].is_blank:
+            log().info("adding 4 blank page to align double pages")
+            blank = dst[-1].blank()
+            dst = dst + [blank] * 4
+        else:
+            log().info("moving blank page to align double pages")
+            dst = [dst[0]] + [dst[-1]] + dst[1:-1]
+
+def move_last_page_after_blank(src):
+    log().info("move last page after blank")
+    if not src[-1].is_blank:
+        return src
+    i = -1
+    while src[i].is_blank:
+        i -= 1
+    return src[:i] + src[i + 1:] + [src[i]]
+
+def add_blank(src):
     log().info("add blank pages")
     pages_num = len(src)
     count = (4 - pages_num % 4) % 4
@@ -152,10 +171,7 @@ def add_blank(src, after_last = True):
                  ", number of blank pages to add: " + str(count))
     last_page = src[-1]
     blank = last_page.blank()
-    if after_last:
-        dst = src + [blank] * count
-    else:
-        dst = src[:-1] + [blank] * count + [last_page]
+    dst = src + [blank] * count
     return dst
 
 def save_pages(pages):
@@ -199,8 +215,10 @@ def pdf_to_book(input, output, args):
     if args.mode != "single":
         pages = split_pages(pages, force=args.mode!="auto")
     pages = resize_pages(pages)
+    pages = add_blank(pages)
     pages = align_double_pages(pages)
-    pages = add_blank(pages, after_last=args.blank_after_last)
+    if not args.blank_after_last:
+        pages = move_last_page_after_blank(pages)
     pairs = rearrange_pages(pages)
     pages = pairs_to_pages(pairs)
     pages_to_pdf(output, pages)
