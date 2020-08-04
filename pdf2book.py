@@ -219,8 +219,15 @@ def pdf_to_book(input, output, args):
         pages = split_pages(pages, force=args.mode!="auto",
                 title_page=args.title_page)
     pages = resize_pages(pages)
-    if args.blank_after_title:
-        pages = [pages[0], pages[0].blank()] + pages[1:]
+    if args.first_page != "auto":
+        first_page = int(args.first_page)
+        for skipped in args.skip:
+            if skipped == first_page:
+                raise RuntimeError("first page is marked for skipping")
+            if skipped < first_page:
+                first_page = first_page - 1
+        if (first_page % 2) == 0:
+            pages = [pages[0], pages[0].blank()] + pages[1:]
     pages = add_blank(pages)
     pages = align_double_pages(pages)
     if not args.blank_after_last:
@@ -244,12 +251,13 @@ def parse_args():
             choices=["auto", "1", "2"],
             help="set title page number: auto - page 1 when it is single, " +
             "page 2 when it is double")
+    parser.add_argument("--first-page", type=str, default="auto",
+            help="set number of the page 1: auto - next page after title, " +
+            "<number> - set it manually")
     parser.add_argument("--skip", type=int, nargs="+", default=[],
             help="pages to skip delimited by space")
     parser.add_argument("--blank-after-last", action="store_true",
             help="insert additional blank pages after last one", default=False)
-    parser.add_argument("--blank-after-title", action="store_true",
-            help="insert 1 blank page after title")
     return parser.parse_args()
 
 def log():
