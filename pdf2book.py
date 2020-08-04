@@ -115,7 +115,7 @@ def square(size):
     (width, height) = size
     return width * height
 
-def split_pages(src, force=False):
+def split_pages(src, force=False, title_page="auto"):
     log().info("split pages, force: " + str(force))
     if force:
         single_flags = [ False ] * len(src)
@@ -127,6 +127,9 @@ def split_pages(src, force=False):
             dst.append(page)
         else:
             dst.extend(page.split())
+    if title_page == "2" or (title_page == "auto" and not single_flags[0]):
+        dst.append(dst[0])
+        del dst[0]
     return dst
 
 def resize_pages(src):
@@ -213,7 +216,8 @@ def pdf_to_book(input, output, args):
     pages = pdf_to_pages(input)
     pages = skip_pages(pages, args.skip)
     if args.mode != "single":
-        pages = split_pages(pages, force=args.mode!="auto")
+        pages = split_pages(pages, force=args.mode!="auto",
+                title_page=args.title_page)
     pages = resize_pages(pages)
     if args.blank_after_title:
         pages = [pages[0], pages[0].blank()] + pages[1:]
@@ -231,15 +235,19 @@ def parse_args():
     parser.add_argument("output", type=str, help="output PDF file")
     parser.add_argument("--log-level", type=str, help="logging level",
             default="INFO")
-    parser.add_argument("--blank-after-last", action="store_true",
-            help="insert additional blank pages after last one", default=False)
     parser.add_argument("--mode", type=str, default="auto",
             choices=["auto", "single", "double"],
             help="pages splitting mode: auto - determine double pages " +
             "automatically, single - single pages only, double - double " +
             "pages only")
+    parser.add_argument("--title-page", type=str, default="auto",
+            choices=["auto", "1", "2"],
+            help="set title page number: auto - page 1 when it is single, " +
+            "page 2 when it is double")
     parser.add_argument("--skip", type=int, nargs="+", default=[],
             help="pages to skip delimited by space")
+    parser.add_argument("--blank-after-last", action="store_true",
+            help="insert additional blank pages after last one", default=False)
     parser.add_argument("--blank-after-title", action="store_true",
             help="insert 1 blank page after title")
     return parser.parse_args()
